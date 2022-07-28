@@ -1,4 +1,6 @@
+import re
 import datetime
+import os.path
 import time
 
 from selenium import webdriver
@@ -55,9 +57,8 @@ class WeiBo:
         content = self.session.get(wb_info_url).json()
         page_detail_urls = content['data']['cards']
 
-        for i in range(len(page_detail_urls[:-2])):
-            # for detail_url in page_detail_urls[:-2]:
-            detail = {'author': [], 'time': [], 'thumbs_up': [], }
+        for i in range(len(page_detail_urls)):
+            detail = {'author': [], 'time': [], 'thumbs_up': [], 'transfor': [], 'text': [], 'url': []}
             # 获取当前微博作者、时间、内容、点赞数、转发数
             # 作者
             author = page_detail_urls[i]['mblog']['user']['screen_name']
@@ -70,18 +71,21 @@ class WeiBo:
             detail['thumbs_up'].append(thumbs_up)
             # 转发数
             transfor = page_detail_urls[i]['mblog']['reposts_count']
-            detail['transfor'] = transfor
+            detail['transfor'].append(transfor)
             # 文章内容
             text = page_detail_urls[i]['mblog']['text']
-            detail['text'] = text
+            print(text)
+            rc = re.compile(r'<[^>]+>', re.S)
+            # for text in texts:
+            #
+            detail['text'].append(text)
             # 详情页地址
             # print('url = ' + detail_url['scheme'])
             url = page_detail_urls[i]['scheme']
-            detail['url'] = url
+            detail['url'].append(url)
             #
             # self.save_data(file_path='./weiBo.csv', dic_list=detail, mode='w')
             info.append(detail)
-            # print(detail)
         return info
 
     # def get_wb_content(self, ):  # 获取当前微博时间、内容、点赞数、转发数
@@ -99,13 +103,13 @@ class WeiBo:
     def get_comments(self):  # 获取当前微博评论数、评论详情
         pass
 
-    def save_data(self, dic_list, file_path, mode):  # 持久化存储数据
+    def save_data(self, dic_list, file_path, mode, header):  # 持久化存储数据
         for dic in dic_list:  # [{}, {}, {} ]
             pf = pd.DataFrame(dic)
-            print(pf)
+            # print(pf)
         # order = ['author', 'time', 'thumbs_up', 'tra-nsfor', 'text', 'url']
         # pf = pf[order]
-        #     pf.to_csv(file_path, mode=mode, encoding='utf-8', index=False)
+            pf.to_csv(file_path, mode=mode, encoding='utf-8', index=False, header=header, index_label=False)
 
 
 if __name__ == '__main__':  # 主函数，定义搜索关键字
@@ -113,9 +117,14 @@ if __name__ == '__main__':  # 主函数，定义搜索关键字
     keywordurl = wb.get_keywords_hot_url('女权')
     # search_pages = int(input('请输入爬取页数（2-20）:'))
     search_pages = 3
+    file_path = './weiBo.csv'
     # 页面数据url
+    header = ['author', 'time', 'thumbs_up', 'transfor', 'text', 'url']
     for index in range(1, search_pages):
         ll = 'https://m.weibo.cn/api/container/getIndex?' + wb.get_all_hot_wb_pages_url(keywordurl)[
                                                             27:] + f'&page={index}'
         dic = wb.get_wb_info(ll)  # 调用get_wb_info函数
-        wb.save_data(dic_list=dic, file_path='./weiBo.csv', mode='a')
+        if os.path.exists(file_path):
+            wb.save_data(dic_list=dic, file_path=file_path, mode='a', header=False)
+        else:
+            wb.save_data(dic_list=dic, file_path=file_path, mode='a', header=header)
