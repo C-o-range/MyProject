@@ -1,3 +1,4 @@
+import time
 import json
 
 import pandas as pd
@@ -38,9 +39,12 @@ class Analyse:
 
 
 if __name__ == '__main__':
-    file = r'D:/zhihu_data_zhuixing.xlsx'
+    file = r'./zhihu_data_zhuixing.xlsx'
     txt_list = load_data(file)
-    for i in range(3):
+    data_list = []
+    for i in range(len(txt_list)):
+        if i % 10 == 0:
+        	time.sleep(2)
         # print(txt_list[i][0])
         txt = json.dumps({
             "text": txt_list[i][0]
@@ -48,5 +52,19 @@ if __name__ == '__main__':
 
         analyse = Analyse()
         attitude = analyse.text_analyse(txt)
-        for item in attitude:
-            print(item, ': ', attitude[item])
+        # for item in attitude:
+            # print(item, ': ', attitude[item])
+            
+        confidence = attitude['items'][0]['confidence']
+        negative_prob = attitude['items'][0]['negative_prob']
+        positive_prob = attitude['items'][0]['positive_prob']
+        print(attitude)
+        # print('confidence=', confidence)
+        # print('negative_prob=', negative_prob)
+        # print('positive_prob=', positive_prob)
+        
+        data_list.append([confidence, negative_prob, positive_prob])
+        print(f'第{i + 1}条')
+    df = pd.DataFrame(data=data_list, columns=['confidence', 'negative_prob', 'positive_prob'])
+    df.to_csv('情感分类.csv', index=False)
+
